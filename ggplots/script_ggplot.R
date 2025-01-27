@@ -34,8 +34,8 @@ p1 <- ggplot() +
   scale_y_continuous(limits = c(45, 645)) +
   scale_fill_manual(name = "Climate Zone", values = c("cyan3", "white", "lightskyblue", "orange"),
                     guide = guide_legend(order = 1)) +  
-  scale_linewidth(range = c(0.2, 1), breaks = c(0.2, 0.6, 1)) + 
-  scale_size_continuous(name = "Number of ASVs", range = c(1, 10), breaks = c(0.2, 0.5, 1), 
+  scale_linewidth(name = "Number of ASVs", range = c(0.2, 1), breaks = c(0.2, 0.6, 1)) + 
+  scale_size_continuous(range = c(1, 10), breaks = c(0.2, 0.5, 1), 
                         guide = guide_legend(order = 2)) +  
   theme_classic() +
   labs(x = "Average Abundance", y = "Number of sites occupied") +
