@@ -1,6 +1,7 @@
 #load necessary libraries
 
 library(networkD3)
+library(htmlwidgets)
 library(webshot)
 
 ##Sankey diagram, Figure 3.
@@ -67,7 +68,6 @@ sankey <- sankeyNetwork(Links = links, Nodes = nodes,
 # Print the Sankey diagram with color customization
 print(sankey)
 
-library(webshot)
 
 html_file <- "sankey_diagram.html"
 saveNetwork(sankey, file = html_file)
@@ -82,59 +82,88 @@ webshot(html_file, png_file, delay = 0.2, cliprect = "viewport")
 ###Sankey diagram, Figure 7
 
 # Define nodes 
-nodes <- data.frame(name = c("Phylogenetic Signal",           # 0
-                             "High Phylogenetic Signal",      # 1
-                             "Medium Phylogenetic Signal",  # 2
-                             "Low Phylogenetic Signal",       # 3
-                             "Strong Environmental Filtering",
-                             "Intermediate Process",
-                             "Null Model"
-))
 
-# Define links (flows from Phylogenetic Signal to High/Intermediate/Low, then to processes)
-links <- data.frame(source = c(0, 0, 0,   # From "Phylogenetic Signal" to High/Intermediate/Low Signal
-                               1, 1, 1,   # From High Signal to ecological processes
-                               2, 2, 2,   # From Intermediate Signal to ecological processes
-                               3, 3, 3),  # From Low Signal to ecological processes
-                    target = c(1, 2, 3,   # Targets for Phylogenetic Signal (High/Intermediate/Low)
-                               4, 5, 6,   # Targets for High Phylogenetic Signal
-                               4, 5, 6,   # Targets for Intermediate Phylogenetic Signal
-                               4, 5, 6),  # Targets for Low Phylogenetic Signal
-                    value = c(33, 22, 44, # Proportions for Phylogenetic Signal to High/Intermediate/Low
-                              22, 8, 3,  # Proportions for High Signal to processes
-                              11, 8, 3, # Proportions for Intermediate Signal to processes
-                              6, 14, 25) # Proportions for Low Signal to processes
-)
+nodes <- data.frame(name = c("36 species", 
+                             "High Phylogenetic Signal\n(Strong geographic pattern\nbetween climate zones)", 
+                             "Medium Phylogenetic Signal\n(Weak geographic pattern\nbetween climate zones)", 
+                             "Low Phylogenetic Signal\n(Weak/no geographic pattern\nbetween climate zones)", 
+                             "No Phylogenetic signal", 
+                             "Community phylogenetic overclustering\nStrong environmental filtering", 
+                             "Intermediate community phylogenetic overclustering\nIntermediate environmental filtering",
+                             "Weak community phylogenetic overclustering\nWeak environmental filtering"))
 
-# Define a color scale for the nodes
+links <- data.frame(source = c(0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4),
+                    target = c(1, 2, 3, 4, 5, 6, 7, 5, 6, 7, 5, 6, 7, 7),
+                    value = c(33, 22, 42, 3, 22, 8, 3, 11, 8, 3, 6, 14, 25, 3))
+
 color_scale <- 'd3.scaleOrdinal()
-               .domain(["Phylogenetic Signal", "High Phylogenetic Signal", "Medium Phylogenetic Signal", "Low Phylogenetic Signal", 
-                        "Null Model", "Intermediate Process", "Strong Environmental Filtering"])
-               .range(["#c2e699", "#66c2a5", "#b15928", "#8da0cb", "#4169e1", "#ffa500", "#ff0000" ])'
+                .domain(["36 species", "High Phylogenetic Signal", "Medium Phylogenetic Signal", "Low Phylogenetic Signal", 
+                         "No Phylogenetic signal", "Community phylogenetic overclustering", "Intermediate community phylogenetic overclustering",
+                         "Weak community phylogenetic overclustering"])
+                .range(["#c2e699", "#66c2a5", "#b15928", "#8da0cb", "#ff6347", "#4169e1", "#ffa500", "#ff0000"])'
 
-# Create the Sankey diagram
 sankey3 <- sankeyNetwork(Links = links, Nodes = nodes, 
                          Source = "source", Target = "target", 
                          Value = "value", NodeID = "name", 
                          units = "Flow",
-                         fontSize = 17,    # Adjust font size
-                         nodeWidth = 20,   # Control the width of the nodes
-                         nodePadding = 10, # Control the padding between nodes
-                         sinksRight = FALSE, # Arrange the flow from left to right
-                         colourScale = color_scale # Apply custom color scale
+                         fontSize = 17, 
+                         fontFamily = "Arial",
+                         nodeWidth = 20, 
+                         nodePadding = 10, 
+                         sinksRight = FALSE, 
+                         colourScale = color_scale)
+
+# Add custom JavaScript rendering
+sankey3 <- htmlwidgets::onRender(
+  sankey3, 
+  '
+  function(el) {
+    var svg = d3.select(el).select("svg");
+    
+    // Add column titles
+    svg.append("text")
+      .attr("x", 350)
+      .attr("y", 10)
+      .attr("font-size", "16px")
+      .attr("font-family", "Arial") 
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .text("Phylogenetic Signal");
+    
+    svg.append("text")
+      .attr("x", 700)
+      .attr("y", 10)
+      .attr("font-size", "16px")
+      .attr("font-family", "Arial") //
+      .attr("font-weight", "bold")
+      .attr("text-anchor", "middle")
+      .text("Phylogenetic Community Structure");
+    
+    // Handle multiline node labels
+    svg.selectAll(".node text")
+      .each(function() {
+        var text = d3.select(this);
+        var lines = text.text().split("\\n");
+        text.text("");
+        lines.forEach(function(line, i) {
+          text.append("tspan")
+              .text(line)
+              .attr("x", 22)
+              .attr("dy", i === 0 ? 0 : "1.2em");
+        });
+      });
+  }
+  '
 )
 
-# Print the Sankey diagram
-sankey
+sankey3
 
+# Save the Sankey diagram as an HTML file
+html_file <- "sankey_diagram_phylocorrected_new.html"
+saveNetwork(sankey3, file = html_file)
 
-
-html_file <- "sankey_diagram_phylo.html"
-saveNetwork(sankey, file = html_file)
-
-# Use webshot to save the Sankey diagram as a PNG
-png_file <- "sankey_diagram.png"
-webshot(html_file, png_file, delay = 0.2, cliprect = "viewport")
-
+# Save as PNG using webshot
+png_file <- "sankey_diagram_phylo_new.png"
+webshot(html_file, png_file, delay = 0.5, cliprect = "viewport")
 
 
